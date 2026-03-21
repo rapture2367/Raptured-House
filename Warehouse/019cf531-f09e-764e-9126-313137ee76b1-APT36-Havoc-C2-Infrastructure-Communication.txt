@@ -1,0 +1,39 @@
+rule apt36_havoc_c2_infrastructure {
+  meta:
+    author = "Georg Lauenstein"
+    date = "2026-03-16"
+    description = "Detects network communication to known APT36 Havoc C2 infrastructure IP addresses"
+    name = "APT36 Havoc C2 Infrastructure Communication"
+    reference = "https://www.bitdefender.com/en-us/blog/businessinsights/apt36-nightmare-vibeware"
+    severity = "Critical"
+    tactic = "TA0011"
+    technique = "T1071.001"
+    type = "alert"
+    data_source = "Network, Firewall, EDR"
+    platform = "Windows"
+    false_positives = "None expected for this specific infrastructure"
+
+  events:
+    $e.metadata.event_type = "NETWORK_CONNECTION"
+    (
+      $e.target.ip = "23.152.0.81" or
+      $e.target.hostname = /slackin\.online/ nocase
+    )
+    $e.principal.hostname = $hostname_ev
+    $hostname_ev != ""
+
+  outcome:
+    $risk_score = 95
+    $suppression_key = $hostname_ev
+    $log_source = array_distinct(strings.coalesce($e.metadata.log_type, $e.metadata.vendor_name, $e.metadata.product_name, "N/A"))
+    $target_ip = array_distinct($e.target.ip)
+    $target_host = array_distinct($e.target.hostname)
+    $process_path = array_distinct($e.principal.process.file.full_path)
+    $event_description = array_distinct(strings.coalesce($e.security_result.summary, $e.security_result.description, "N/A"))
+
+  condition:
+    $e
+
+  options:
+    suppression_window = 10m
+}
