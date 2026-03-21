@@ -1,0 +1,38 @@
+rule apt36_creepdropper_scheduled_task_persistence {
+  meta:
+    author = "Georg Lauenstein"
+    date = "2026-03-16"
+    description = "Detects scheduled task creation with naming patterns matching APT36 CreepDropper persistence mechanism"
+    name = "APT36 CreepDropper Scheduled Task Persistence"
+    reference = "https://www.bitdefender.com/en-us/blog/businessinsights/apt36-nightmare-vibeware"
+    severity = "High"
+    tactic = "TA0003"
+    technique = "T1053.005"
+    type = "alert"
+    data_source = "Process, EDR, Windows Event Logs"
+    platform = "Windows"
+    false_positives = "Legitimate Microsoft Edge update tasks with similar naming"
+
+  events:
+    $e.metadata.event_type = "PROCESS_LAUNCH"
+    $e.target.process.file.full_path = /schtasks\.exe$/ nocase
+    (
+      $e.target.process.command_line = /MicrosoftEdgesUpdatesTasksMachineUAs-Task/ nocase or
+      $e.target.process.command_line = /MicrosoftEdgesUpdatesTasksMachineUAs-1234/ nocase
+    )
+    $e.principal.hostname = $hostname_ev
+    $hostname_ev != ""
+
+  outcome:
+    $risk_score = 85
+    $suppression_key = $hostname_ev
+    $log_source = array_distinct(strings.coalesce($e.metadata.log_type, $e.metadata.vendor_name, $e.metadata.product_name, "N/A"))
+    $command_line = array_distinct(strings.coalesce($e.target.process.command_line, "N/A"))
+    $event_description = array_distinct(strings.coalesce($e.security_result.summary, $e.security_result.description, "N/A"))
+
+  condition:
+    $e
+
+  options:
+    suppression_window = 10m
+}
