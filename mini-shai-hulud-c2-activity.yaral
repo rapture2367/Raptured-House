@@ -1,0 +1,15 @@
+rule mini_shai_hulud_c2_activity {
+  meta:
+    author = "SecEng"
+    description = "Detects network connections to the Session P2P exfiltration infrastructure used by the Mini Shai-Hulud campaign."
+    severity = "High"
+    reference = "https://socket.dev/blog/tanstack-npm-packages-compromised-mini-shai-hulud-supply-chain-attack"
+    tags = "attack.command-and-control, attack.t1071.001, attack.exfiltration, attack.t1048"
+    false_positive = "Legitimate Session messenger usage (for getsession.org)"
+events:
+    $e.metadata.event_type = "DNS_QUERY"
+    strings.contains($e.network.dns.question_name, "filev2.getsession.org") or strings.contains($e.network.dns.question_name, "getsession.org") or strings.contains($e.network.dns.question_name, "git-tanstack.com")
+
+  condition:
+    $e
+}
