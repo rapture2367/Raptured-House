@@ -1,0 +1,17 @@
+rule windows_defender_real_time_monitoring_disabled_via_powershell {
+  meta:
+    author = "detections.ai"
+    description = "Detects the execution of the Set-MpPreference PowerShell cmdlet to disable Windows Defender real-time monitoring. This technique is frequently abused by malware and ransomware affiliates, such as The Gentlemen RaaS, to bypass endpoint defenses prior to payload detonation."
+    severity = "Medium"
+    tags = "attack.defense-evasion, attack.t1562.001"
+    reference = "https://research.checkpoint.com/2026/dfir-report-the-gentlemen/"
+    false_positives = "Legitimate administrative actions for troubleshooting or temporary deployment tasks."
+events:
+    $e.metadata.event_type = "PROCESS_LAUNCH"
+    $e.target.process.command_line = /Set-MpPreference/ nocase
+    $e.target.process.command_line = /DisableRealtimeMonitoring/ nocase
+    $e.target.process.command_line = /\$true|True| 1|:1/ nocase
+
+  condition:
+    $e
+}
