@@ -1,0 +1,18 @@
+rule node_js_suspicious_setup_script_execution {
+  meta:
+    author = "nomit vyas"
+    description = "Detects Node.js executing the malicious setup.cjs script or easy-day-js with the --no-warnings flag, associated with the Mastra npm supply chain compromise."
+    severity = "High"
+    id = "a1b2c3d4-e5f6-7890-abcd-1234567890ab"
+    reference = "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+    tags = "attack.execution"
+
+  events:
+    $e1.metadata.event_type = "PROCESS_LAUNCH"
+    $e1.target.process.file.full_path =~ /node(\.exe)?$/ nocase
+    $e1.target.process.command_line =~ /setup\.cjs|easy-day-js/ nocase
+    $e1.target.process.command_line =~ /--no-warnings/ nocase
+
+  condition:
+    $e1
+}
