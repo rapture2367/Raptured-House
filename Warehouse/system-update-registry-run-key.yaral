@@ -1,0 +1,24 @@
+rule system_update_registry_run_key {
+  meta:
+    author = "detections.ai"
+    description = "Detects the axois-utils phantom bot persistence mechanism attempting to modify the Windows Run registry key with the value 'SystemUpdate' pointing to a Node application."
+    severity = "High"
+    mitre_attack_techniques = "T1547.001"
+    mitre_attack_tactics = "TA0003"
+    reference = "https://www.ox.security/blog/new-actors-deploy-shai-hulud-clones-teampcp-copycats-are-here/"
+    false_positive = "Legitimate internal tools that mimic this exact behavior (setting 'SystemUpdate' in a Run key to execute a Node.js application). Exclusion by 'actor_process_image_name' may be required."
+events:
+    $e.metadata.event_type = "REGISTRY_MODIFICATION"
+    $e.target.registry.registry_path = /CurrentVersion\\Run/ nocase
+    $e.target.registry.registry_value_name = "SystemUpdate" nocase
+    strings.contains($e.target.registry.registry_value_data, "node") nocase
+
+  condition:
+    $e
+
+  outcome:
+    $agent_hostname = array_distinct($e.principal.hostname)
+    $actor_process_image_name = array_distinct($e.principal.process.file.full_path)
+    $registry_key = array_distinct($e.target.registry.registry_path)
+    $registry_data = array_distinct($e.target.registry.registry_value_data)
+}
